@@ -15,15 +15,18 @@ class Server(object):
     def __init__(self, max_peers):
         self.known_peers = []
         self.server = create_server()
+        self.is_alive = True
 
 
     def run_server(self):
-        while True:
+        while self.is_alive:
             connection_thread = threading.Thread(
                 target=self._forward_to_handler,
                 args=(*self.server.accept(),)
             )
             connection_thread.start()
+        
+        self._close_connection()
 
 
     def _forward_to_handler(self, client, addr):
@@ -38,15 +41,19 @@ class Server(object):
 
     
     def _forward_msg(self, client, tag, msg):
-        if tag not in hdl.ACCEPTED_TAGS.keys():
-            self._close_connection()
+        if not tag in hdl.SERVER_TAGS.keys():
+            self._close_connection(client=client)
             return
         
-        hdl.ACCEPTED_TAGS[tag](client, msg)
-        self._close_connection()
+        hdl.SERVER_TAGS[tag](client, msg)
+        self._close_connection(client=client)
 
 
-    def _close_connection(self):
-        self.server.shutdown(socket.SHUT_RDWR)
-        self.server.close()
+    def _close_connection(self, client=None):
+        if not client:
+            self.server.shutdown(socket.SHUT_RDWR)
+            self.server.close()
+        else:
+            client.shutdown(socket.SHUT_RDWR)
+            client.close()
 

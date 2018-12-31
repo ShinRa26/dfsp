@@ -1,17 +1,9 @@
-import os
-import pickle
-import socket
 import threading
 import handlers as hdl
 from server import Server
 
 PEER_MAX = 128
 
-def make_socket():
-    return socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-
-
-# TODO::Split server into own class, getting too busy
 class Node(object):
     def __init__(self, max_peers=PEER_MAX):
         self.debug = True
@@ -23,3 +15,7 @@ class Node(object):
         )
         self.server_thread.start()
 
+
+    def __del__(self):
+        self.server.is_alive = False
+        self.server_thread.join()
